@@ -35,7 +35,6 @@ class GPKAN(Network):
 		assert len(mean_func) == len(self.dims)-1
 
 		if kernel is None or isinstance(kernel, str):
-			#kernel = [kernel] * (len(self.dims)-1)
 			kernel = [kernel] * (len(self.dims)-1)
 		assert len(kernel) == len(self.dims)-1
 
