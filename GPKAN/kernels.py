@@ -112,6 +112,7 @@ class Matern1p5Kernel(MaternKernel):
 	def __init__(self, dim0: int, dim1: int):
 		MaternKernel.__init__(self, 1.5, dim0, dim1)
 
+
 class Matern2p5Kernel(MaternKernel):
 
 	def __init__(self, dim0: int, dim1: int):
