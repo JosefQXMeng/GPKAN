@@ -13,14 +13,14 @@ from .utils import MaternExpectation, SquaredExponentialExpectation
 
 class RBF(Module, ABC):
 
-	def __init__(self, dim0: int, dim1: int, num_comp: int):
+	def __init__(self, size: list[int], num_comp: int):
 		Module.__init__(self)
 
 		self.num_comp = num_comp  # K
-		# [D, Q, K]
-		self.weight = Parameter(torch.zeros(dim0, dim1, num_comp))
-		self.center = Parameter(torch.rand(dim0, dim1, num_comp).mul(2).sub(1))
-		self._lengthscale = Parameter(torch.zeros(dim0, dim1, num_comp))
+		# [..., Q, K]
+		self.weight = Parameter(torch.zeros(*size, num_comp))
+		self.center = Parameter(torch.rand(*size, num_comp).mul(2).sub(1))
+		self._lengthscale = Parameter(torch.zeros(*size, num_comp))
 
 	@property
 	def lengthscale(self) -> Tensor:
@@ -31,11 +31,6 @@ class RBF(Module, ABC):
 		...
 
 	def forward(self, x_mean: Tensor, x_var: Optional[Tensor] = None) -> Tensor:
-		"""
-		x_mean & x_var ~ [B, Q]
-		->
-		E[m(x)] ~ [B, D, Q]
-		"""
 		dist = x_mean.unsqueeze(-1).sub(self.center)
 		if x_var is not None:
 			x_var = x_var.unsqueeze(-1)
@@ -56,8 +51,8 @@ class RBF(Module, ABC):
 
 class GaussianRBF(RBF):
 
-	def __init__(self, dim0: int, dim1: int, num_comp: int):
-		RBF.__init__(self, dim0, dim1, num_comp)
+	def __init__(self, size: list[int], num_comp: int):
+		RBF.__init__(self, size, num_comp)
 
 	def expectation(self, lengthscale: Tensor, mu: Tensor, sigma_sq: Optional[Tensor] = None) -> Tensor:
 		return SquaredExponentialExpectation(lengthscale, mu, sigma_sq)
@@ -65,8 +60,8 @@ class GaussianRBF(RBF):
 
 class AbsoluteExponentialRBF(RBF):
 
-	def __init__(self, dim0: int, dim1: int, num_comp: int):
-		RBF.__init__(self, dim0, dim1, num_comp)
+	def __init__(self, size: list[int], num_comp: int):
+		RBF.__init__(self, size, num_comp)
 
 	def expectation(self, lengthscale: Tensor, mu: Tensor, sigma_sq: Optional[Tensor] = None) -> Tensor:
 		return MaternExpectation(0.5, lengthscale, mu, sigma_sq)

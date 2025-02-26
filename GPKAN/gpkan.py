@@ -1,7 +1,6 @@
 
 from typing import Any, Optional, Union
 
-import torch
 from torch import Tensor
 from torch.nn import ModuleDict
 
@@ -23,6 +22,7 @@ class GPKAN(Network):
 		mean_func: list[Optional[str]] = None,
 		num_comp: int = 0,
 		degree: int = 0,
+		num_basis: int = 0,
 	):
 		Network.__init__(self, in_dim, out_dim, hidden_dims)
 
@@ -42,7 +42,7 @@ class GPKAN(Network):
 		for i in range(len(self.dims)-1):
 			layerdict[f"norm_{i+1}"] = NormLayer()
 			layerdict[f"fc_{i+1}"] = FCLayer(
-				self.dims[i], self.dims[i+1], num_induc[i], kernel[i], mean_func[i], num_comp, degree,
+				self.dims[i], self.dims[i+1], num_induc[i], kernel[i], mean_func[i], num_comp, degree, num_basis,
 			)
 		self.layers = ModuleDict(layerdict)
 
@@ -62,6 +62,11 @@ class GPKAN(Network):
 		for layer in self.layers.values():
 			if isinstance(layer, FCLayer):
 				layer.add_degree(num)
+
+	def add_basis(self, num: int) -> None:
+		for layer in self.layers.values():
+			if isinstance(layer, FCLayer):
+				layer.add_basis(num)
 	
 	def add_comp(self, num: int) -> None:
 		for layer in self.layers.values():
@@ -81,9 +86,10 @@ class GPKANR(GPKAN, Regr):
 		mean_func: list[Optional[str]] = None,
 		num_comp: int = 0,
 		degree: int = 0,
+		num_basis: int = 0,
 		min_noise_var: float = 1e-6,
 	):
-		GPKAN.__init__(self, in_dim, out_dim, hidden_dims, num_induc, kernel, mean_func, num_comp, degree)
+		GPKAN.__init__(self, in_dim, out_dim, hidden_dims, num_induc, kernel, mean_func, num_comp, degree, num_basis)
 		Regr.__init__(self, out_dim, min_noise_var)
 
 	def loglikelihood(self, x: Tensor, y: Tensor) -> Tensor:
@@ -101,16 +107,5 @@ class GPKANR(GPKAN, Regr):
 			return y.sub(f_mean).pow(2).sum(-1).mean()
 		else:
 			return self.ell(f_mean, f_var, y).sum(-1).mean().mul(-1)
-		
-	# TODO: how to penalize the complexity?
-	def regularized_loglikelihood(self, x: Tensor, y: Tensor, beta: Optional[float] = None) -> None:
-		f_mean, f_var = self.forward(x, regularize=bool(beta))
-		ell = self.ell(f_mean, f_var, y).sum(-1).mean()
-		l1_norm = torch.zeros([]); entropy = torch.zeros([])
-		if beta:
-			for layer in self.layers.values():
-				l1_norm += layer.l1_norm.sum()
-				entropy += layer.entropy.sum()
-		return ell - (l1_norm + entropy) * (beta if beta else 0)
 
 
