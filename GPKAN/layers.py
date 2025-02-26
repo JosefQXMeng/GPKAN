@@ -73,7 +73,7 @@ class FCLayer(Layer):
 		E[u(x)] ~ [(B), D, D, M]
 		"""
 		expected_u = self.polynomial_coef[0]
-		if self.degree or (hasattr(self, "u_rbf") and self.u_rbf.num_comp):
+		if self.degree or self.u_rbf.num_comp:
 			x_mean = x_mean.unsqueeze(-2).unsqueeze(-1)
 			if x_var is not None:
 				x_var = x_var.unsqueeze(-2).unsqueeze(-1)
@@ -85,7 +85,7 @@ class FCLayer(Layer):
 			q_var = torch.zeros([]) if x_var is None else x_var.mul(lengthscale).div(var_sum)
 		for k in range(1, self.degree+1):
 			expected_u = self.normal_moment(q_mean, q_var, k).mul(self.polynomial_coef[k]).add(expected_u)
-		if hasattr(self, "u_rbf") and self.u_rbf.num_comp:
+		if self.u_rbf.num_comp:
 			expected_u = self.u_rbf(q_mean, q_var).add(expected_u)
 		return expected_u
 
