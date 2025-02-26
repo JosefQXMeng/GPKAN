@@ -48,7 +48,7 @@ class FCLayer(Layer):
 			mean_func = eval(mean_func)
 		assert mean_func is None or callable(mean_func)
 
-		if mean_func is not None and num_comp:
+		if mean_func is not None:
 			self.mean_func = mean_func(out_dim, in_dim, num_comp)
 		else:
 			self.mean_func = None
@@ -76,7 +76,7 @@ class FCLayer(Layer):
 	
 	def expected_u(self, x_mean: Tensor, x_var: Optional[Tensor] = None) -> Tensor:
 		"""
-		x_mean & x_var ~ [B, 1, Q]
+		x_mean & x_var ~ [B, Q]
 		->
 		E[u(x)] ~ [(B), D, D, M]
 		"""
@@ -93,7 +93,7 @@ class FCLayer(Layer):
 		for k in range(1, self.degree+1):
 			expected_u = self.normal_moment(q_mean, q_var, k).mul(self.polynomial_coef[k]).add(expected_u)
 		return expected_u
-		
+
 	def compute_w(
 		self, x_mean: Tensor, x_var: Optional[Tensor] = None, regularize: bool = False,
 	) -> tuple[Tensor, Union[Tensor, None]]:
@@ -103,7 +103,7 @@ class FCLayer(Layer):
 		w_mean & w_var ~ [B, D, Q]
 		"""
 
-		if self.mean_func is None:
+		if self.mean_func is None or not self.mean_func.num_comp:
 			E_prior_mean = induc_mean = 0
 		else:
 			# E[m(x)] ~ [B, D, Q]
@@ -147,6 +147,17 @@ class FCLayer(Layer):
 		f_mean = w_mean.sum(-1)
 		f_var = None if w_var is None else w_var.sum(-1) + 1e-6
 		return f_mean, f_var
+
+	def add_degree(self, num: int) -> None:
+		assert isinstance(self.kernel, SquaredExponentialKernel)
+		coef = self.polynomial_coef.data
+		self.polynomial_coef = Parameter(torch.cat([coef, torch.zeros(num, *coef.size()[1:])], dim=0))
+		self.degree += num
+		self.init_moment_coef(self.degree)
+
+	def add_comp(self, num: int) -> None:
+		if self.mean_func is not None:
+			self.mean_func.add_comp(num)
 
 	def extra_repr(self) -> str:
 		value = f"in_dim={self.in_dim}, out_dim={self.out_dim}"
