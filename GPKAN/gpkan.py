@@ -1,13 +1,13 @@
 
-from typing import Any, Callable, Optional, Union
+from typing import Any, Optional, Union
 
 import torch
 from torch import Tensor
 from torch.nn import ModuleDict
 
 from .abstr import Network, Regr
-from .layers import FCLayer, NormLayer
 from .gmlp import GaussianMLPR
+from .layers import FCLayer, NormLayer
 
 
 
@@ -57,6 +57,16 @@ class GPKAN(Network):
 		for layer in self.layers.values():
 			f_mean, f_var = layer.forward(f_mean, f_var)
 		return f_mean, f_var
+	
+	def add_degree(self, num: int) -> None:
+		for layer in self.layers.values():
+			if isinstance(layer, FCLayer):
+				layer.add_degree(num)
+	
+	def add_comp(self, num: int) -> None:
+		for layer in self.layers.values():
+			if isinstance(layer, FCLayer):
+				layer.add_comp(num)
 
 
 class GPKANR(GPKAN, Regr):
@@ -68,7 +78,7 @@ class GPKANR(GPKAN, Regr):
 		hidden_dims: Optional[Union[int, list[int]]],
 		num_induc: Union[int, list[int]],
 		kernel : list[Optional[str]] = "SquaredExponentialKernel",
-		mean_func: Union[int, Callable] = 2,
+		mean_func: list[Optional[str]] = None,
 		num_comp: int = 0,
 		degree: int = 0,
 		min_noise_var: float = 1e-6,

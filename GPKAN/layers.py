@@ -7,8 +7,8 @@ from torch import Tensor
 from torch.nn import Parameter
 
 from .abstr import Layer
-from .means import AbsoluteExponentialRBF, GaussianRBF
 from .kernels import Matern0p5Kernel, Matern1p5Kernel, Matern2p5Kernel, SquaredExponentialKernel
+from .means import AbsoluteExponentialRBF, GaussianRBF
 
 
 
