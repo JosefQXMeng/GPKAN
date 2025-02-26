@@ -50,6 +50,7 @@ class Network(Module, ABC):
 class Regr(ABC):
 
 	def __init__(self, out_dim: int, min_noise_var: float = 1e-6):
+		assert isinstance(self, Network)
 		self._noise_var = Parameter(torch.zeros([out_dim]))
 		self.min_noise_var = min_noise_var
 
