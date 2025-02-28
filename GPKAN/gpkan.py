@@ -58,6 +58,11 @@ class GPKAN(Network):
 		for layer in self.layers.values():
 			f_mean, f_var = layer.forward(f_mean, f_var)
 		return f_mean, f_var
+
+	def normalize_inputs(self) -> None:
+		layers = ModuleDict({"norm_0": NormLayer()})
+		layers.update(self.layers)
+		self.layers = layers
 	
 	def add_degree(self, num: int) -> None:
 		for layer in self.layers.values():
