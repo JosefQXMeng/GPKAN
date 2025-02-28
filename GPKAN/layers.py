@@ -33,7 +33,7 @@ class FCLayer(Layer):
 		assert kernel is None or callable(kernel)
 		if kernel is not None and num_induc:
 			self.kernel = kernel(out_dim, in_dim)
-			# z ~ [(D), Q, M]
+			# z ~ [D, Q, M]
 			self.induc_loc = Parameter(torch.rand(out_dim, in_dim, num_induc).mul(2).sub(1))
 			degree = degree if kernel == SquaredExponentialKernel else 0
 			self.degree = degree

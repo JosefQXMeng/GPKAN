@@ -46,6 +46,7 @@ class GPKAN(Network):
 				self.dims[i], self.dims[i+1], num_induc[i], kernel[i], mean_func[i], num_comp, degree, num_basis,
 			)
 		self.layers = ModuleDict(layerdict)
+		self.inputs_normalized = False
 
 	def forward(self, x: Tensor) -> tuple[Tensor, Union[Tensor, None]]:
 		"""
@@ -60,9 +61,11 @@ class GPKAN(Network):
 		return f_mean, f_var
 
 	def normalize_inputs(self) -> None:
-		layers = ModuleDict({"norm_0": NormLayer()})
-		layers.update(self.layers)
-		self.layers = layers
+		if not self.inputs_normalized:
+			layers = ModuleDict({"norm_0": NormLayer()})
+			layers.update(self.layers)
+			self.layers = layers
+			self.inputs_normalized = True
 	
 	def add_degree(self, num: int) -> None:
 		for layer in self.layers.values():
@@ -78,6 +81,9 @@ class GPKAN(Network):
 		for layer in self.layers.values():
 			if isinstance(layer, FCLayer):
 				layer.add_comp(num)
+
+	def extra_repr(self) -> str:
+		return "shape=[{}]".format(",".join(map(str, self.dims)))
 
 
 class GPKANR(GPKAN, Regr):
