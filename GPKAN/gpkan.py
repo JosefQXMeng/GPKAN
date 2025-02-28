@@ -20,9 +20,9 @@ class GPKAN(Network):
 		num_induc: Union[int, list[int]],
 		kernel : list[Optional[str]] = "SquaredExponentialKernel",
 		mean_func: list[Optional[str]] = None,
-		num_comp: int = 0,
+		num_comp: Optional[int] = None,
 		degree: int = 0,
-		num_basis: int = 0,
+		num_basis: Optional[int] = None,
 	):
 		Network.__init__(self, in_dim, out_dim, hidden_dims)
 
@@ -40,7 +40,8 @@ class GPKAN(Network):
 
 		layerdict = {}
 		for i in range(len(self.dims)-1):
-			layerdict[f"norm_{i+1}"] = NormLayer()
+			if i > 0:
+				layerdict[f"norm_{i}"] = NormLayer()
 			layerdict[f"fc_{i+1}"] = FCLayer(
 				self.dims[i], self.dims[i+1], num_induc[i], kernel[i], mean_func[i], num_comp, degree, num_basis,
 			)
@@ -84,9 +85,9 @@ class GPKANR(GPKAN, Regr):
 		num_induc: Union[int, list[int]],
 		kernel : list[Optional[str]] = "SquaredExponentialKernel",
 		mean_func: list[Optional[str]] = None,
-		num_comp: int = 0,
+		num_comp: Optional[int] = None,
 		degree: int = 0,
-		num_basis: int = 0,
+		num_basis: Optional[int] = None,
 		min_noise_var: float = 1e-6,
 	):
 		GPKAN.__init__(self, in_dim, out_dim, hidden_dims, num_induc, kernel, mean_func, num_comp, degree, num_basis)

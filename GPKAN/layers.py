@@ -21,9 +21,9 @@ class FCLayer(Layer):
 		num_induc: int,
 		kernel : Optional[Union[str, Callable]] = "SquaredExponentialKernel",
 		mean_func: Optional[Union[str, Callable]] = None,
-		num_comp: int = 0,
+		num_comp: Optional[int] = None,
 		degree: int = 0,
-		num_basis: int = 0,
+		num_basis: Optional[int] = None,
 	):
 		Layer.__init__(self, in_dim, out_dim)
 		
@@ -38,7 +38,7 @@ class FCLayer(Layer):
 			degree = degree if kernel == SquaredExponentialKernel else 0
 			self.degree = degree
 			self.polynomial_coef = Parameter(torch.zeros(degree+1, out_dim, in_dim, num_induc))
-			self.u_rbf = GaussianRBF([out_dim, in_dim, num_induc], num_basis)
+			self.u_rbf = None if num_basis is None else GaussianRBF([out_dim, in_dim, num_induc], num_basis)
 			self.init_moment_coef(degree)
 		else:
 			self.kernel = None
@@ -46,7 +46,7 @@ class FCLayer(Layer):
 		if isinstance(mean_func, str):
 			mean_func = eval(mean_func)
 		assert mean_func is None or callable(mean_func)
-		self.mean_func = None if mean_func is None else mean_func([out_dim, in_dim], num_comp)
+		self.mean_func = None if (mean_func is None or num_comp is None) else mean_func([out_dim, in_dim], num_comp)
 	
 	def init_moment_coef(self, degree: int) -> None:
 		coef_list = []
@@ -73,7 +73,7 @@ class FCLayer(Layer):
 		E[u(x)] ~ [(B), D, D, M]
 		"""
 		expected_u = self.polynomial_coef[0]
-		if self.degree or self.u_rbf.num_comp:
+		if self.degree or (self.u_rbf is not None and self.u_rbf.num_comp):
 			x_mean = x_mean.unsqueeze(-2).unsqueeze(-1)
 			if x_var is not None:
 				x_var = x_var.unsqueeze(-2).unsqueeze(-1)
@@ -85,7 +85,7 @@ class FCLayer(Layer):
 			q_var = torch.zeros([]) if x_var is None else x_var.mul(lengthscale).div(var_sum)
 		for k in range(1, self.degree+1):
 			expected_u = self.normal_moment(q_mean, q_var, k).mul(self.polynomial_coef[k]).add(expected_u)
-		if self.u_rbf.num_comp:
+		if self.u_rbf is not None and self.u_rbf.num_comp:
 			expected_u = self.u_rbf(q_mean, q_var).add(expected_u)
 		return expected_u
 
